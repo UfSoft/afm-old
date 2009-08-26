@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<source name="Fiona" uri="file:///home/vampas/projects/NAD/tests/FionaApple-FastAsYouCan.wav">
+  <tests>
+    <test module="afm.sources.audiofile" class="AudioFile"/>
+  </tests>
+</source>
