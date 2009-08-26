@@ -1,0 +1,2 @@
+
+from afm import startup
