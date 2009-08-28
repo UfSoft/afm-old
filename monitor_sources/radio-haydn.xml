@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<source name="Rádio Woodstock" uri="mms://195.245.168.21/radio3">
+<source name="Rádio Haydn" uri="mms://195.245.168.21/haydn">
   <tests>
     <test module="afm.checks.silence" class="SilenceChecker">
       <params>

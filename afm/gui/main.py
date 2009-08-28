@@ -6,7 +6,8 @@
 # License: BSD - Please view the LICENSE file for additional information.
 # ==============================================================================
 
-from afm import startup
+import afm
+
 import gobject
 import gtk
 from twisted.internet import reactor
@@ -15,19 +16,38 @@ from afm.checks import BaseChecker
 from afm.gui.about import AboutDialog
 from afm.gui.failures import FailuresWindow
 from afm.gui.glade import AFM_LOGO_PATH, _
-from afm.tester import AudioTester
+from afm.sources import BaseAudioSource
 
 class Application(gobject.GObject):
     def __init__(self):
         self.__gobject_init__()
-        self.tester = AudioTester(self)
-        reactor.callLater(1, self.tester.start)
+        self.sources = []
+        self.sources.append(BaseAudioSource(self,
+            '/home/vampas/projects/AudioFailureMonitor/monitor_sources/file.xml'
+        ))
+        reactor.callLater(1, self.start_sources)
         self.about_dialog = AboutDialog()
         self.tray_icon = self.create_tray_icon()
         self.menu = self.create_menu()
         self.failures = self.create_failures_window()
         self.failures.window.maximize()
         self.tray_icon.connect('activate', self.failures.toggle_window)
+        self.failures.show()
+
+    def connect_signal_to_sources(self, *args, **kwargs):
+        for source in self.sources:
+            source.connect_signal_to_tests(*args, **kwargs)
+
+    def connect_signals(self):
+        self.failures.connect_signals()
+
+    def start_sources(self):
+        for source in self.sources:
+            source.start()
+
+    def stop_sources(self):
+        for source in self.sources:
+            source.stop()
 
     def create_failures_window(self):
         return FailuresWindow(self)
@@ -82,7 +102,7 @@ class Application(gobject.GObject):
     def exit(self, widget):
         """Exits the application."""
         self.tray_icon.set_visible(False)
-        self.tester.stop()
+        self.stop_sources()
         reactor.stop()
 
 

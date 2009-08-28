@@ -20,19 +20,18 @@ class FailuresWindow(BaseGladeWidget):
         self.window.connect('delete_event', self.dont_destroy_window)
         self.failuresTreeView = self.wTree.get_widget('failuresTreeView')
         self.failuresModel = gtk.ListStore(str, str, str, str)
-        self.failuresModelIter = self.failuresModel.get_iter_first()
         self.failuresTreeView.set_model(self.failuresModel)
 
         self.add_failure_column("Date", COLUMN_DATE)
         self.add_failure_column("Source", COLUMN_SOURCE)
         self.add_failure_column("Type", COLUMN_TYPE)
         self.add_failure_column("Message", COLUMN_MESSAGE, True)
-#        print dir(self.app.tester)
 
-        self.app.tester.connect_signal('audio-ok', self.audio_debug)
-        self.app.tester.connect_signal('audio-warning', self.audio_debug)
-        self.app.tester.connect_signal('audio-failure', self.audio_debug)
-        self.app.tester.connect_signal('audio-debug', self.audio_debug)
+    def connect_signals(self):
+        self.app.connect_signal_to_sources('audio-ok', self.audio_debug)
+        self.app.connect_signal_to_sources('audio-warning', self.audio_debug)
+        self.app.connect_signal_to_sources('audio-failure', self.audio_debug)
+        self.app.connect_signal_to_sources('audio-debug', self.audio_debug)
 
     def dont_destroy_window(self, widget, event):
         self.window.hide_all()
@@ -68,4 +67,3 @@ class FailuresWindow(BaseGladeWidget):
                                COLUMN_SOURCE, checker.__class__.__name__,
                                COLUMN_TYPE, type,
                                COLUMN_MESSAGE, message)
-        print 9999, checker, type, message, stamp

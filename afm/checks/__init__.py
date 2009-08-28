@@ -4,12 +4,10 @@ import gst
 from datetime import datetime, timedelta
 
 class BaseChecker(gobject.GObject):
-    trigger_timeout = 3000
-    warn_timeout = 7000
     warning_emitted = failure_emitted = False
 
-    _ts = _te = None
-    gst_element = None
+    _tstart = _tend = _texpired = None
+    source = gst_element = None
 
     __gsignals__ = {
         'audio-warning': (gobject.SIGNAL_RUN_FIRST, gobject.TYPE_NONE,
@@ -22,53 +20,60 @@ class BaseChecker(gobject.GObject):
                         (str, str, str)),
     }
 
-    def __init__(self):
+    def __init__(self, min_tolerance=3000, max_tolerance=7000):
         self.__gobject_init__()
+        self.min_tolerance=min_tolerance
+        self.max_tolerance=max_tolerance
 
     def __call__(self):
         return self.gst_element
 
+    def gst_element_factory_make(self, element_name):
+        return gst.element_factory_make(
+            element_name, '-'.join([element_name,
+                                    ''.join(self.source.name.split())])
+        )
+
+    def prepare_test(self, source):
+        raise NotImplementedError("You must override this method")
+
     def trigger(self):
-        msg = 'Triggered, Warn in %d seconds' % (self.trigger_timeout/1000)
-        self._ts = datetime.utcnow()
-        self._te = self._ts + timedelta(seconds=self.trigger_timeout/1000)
-        self.emit('audio-warning', 'WARNING', msg, str(self._ts))
+        msg = 'Triggered, Warn in %d seconds' % (self.min_tolerance/1000)
+        self._tstart = datetime.utcnow()
+        self._tend = self._tstart + timedelta(seconds=self.min_tolerance/1000)
+        self._texpired = self._tstart + timedelta(seconds=self.max_tolerance/1000)
+        self.emit('audio-warning', 'WARNING', msg, str(self._tstart))
 
     @property
     def trigger_active(self):
-        return self._te and self._te > datetime.utcnow() or False
+        return self._tend and self._tend > datetime.utcnow() or False
 
     @property
     def trigger_expired(self):
-        return self._te and self._te < datetime.utcnow() or False
+        return self._texpired and self._texpired < datetime.utcnow() or False
 
     def emit_debug(self, message):
-        self.emit('audio-debug', 'DEBUG', message, str(self._ts))
+        self.emit('audio-debug', 'DEBUG', message, str(self._tstart))
 
     def emit_warning(self, message):
         if not self.warning_emitted:
             self.warning_emitted = True
-            self.emit('audio-warning', 'WARNING', message, str(self._ts))
+            self.emit('audio-warning', self.__class__.__name__, message, str(self._tstart))
 
     def emit_failure(self, message):
         if not self.failure_emitted:
             self.failure_emitted = True
-            self.emit('audio-failure', 'FAILURE', message, str(self._ts))
+            self.emit('audio-failure', 'FAILURE', message, str(self._tstart))
 
     def emit_ok(self, message="Trigger Stopped"):
-        self.emit('audio-ok', 'WARNING', message, str(self._ts))
+        self.emit('audio-ok', 'OK', message, str(self._tstart))
 
-    def stop_trigger(self):
-        self.emit_ok()
-        self._ts = self._te = None
+    def stop_trigger(self, message):
+        self.emit_ok(message)
+        self.kill_trigger()
+
+    def kill_trigger(self):
+        self._tstart = self._tend = None
         self.failure_emitted = self.warning_emitted = False
 
 gobject.type_register(BaseChecker)
-#gobject.signal_new('audio-warning', BaseChecker, gobject.SIGNAL_RUN_FIRST,
-#                   gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT, str, str, str))
-#gobject.signal_new('audio-failure', BaseChecker, gobject.SIGNAL_RUN_FIRST,
-#                   gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT, str, str, str))
-#gobject.signal_new('audio-ok', BaseChecker, gobject.SIGNAL_RUN_FIRST,
-#                   gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT, str, str, str))
-#gobject.signal_new('audio-debug', BaseChecker, gobject.SIGNAL_RUN_FIRST,
-#                   gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT, str, str, str))
