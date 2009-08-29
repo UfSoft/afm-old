@@ -18,7 +18,7 @@ class FailuresWindow(BaseGladeWidget):
         self.window = self.wTree.get_widget('mainWindow')
         self.window.set_icon_from_file(AFM_LOGO_PATH)
         self.window.connect('delete_event', self.dont_destroy_window)
-        self.failuresTreeView = self.wTree.get_widget('failuresTreeView')
+        self.failuresTreeView = self.wTree.get_widget('failuresTreeview')
         self.failuresModel = gtk.ListStore(str, str, str, str)
         self.failuresTreeView.set_model(self.failuresModel)
 
