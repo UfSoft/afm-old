@@ -34,6 +34,7 @@ class SourceConfig(object):
             yield load_test(self.source, test)
         raise StopIteration
 
+
 PARAM_TYPES = {
     None:    str,
     'str':   str,
@@ -42,16 +43,21 @@ PARAM_TYPES = {
     'float': float
 }
 
+
+class ConfigParam(object):
+    def __init__(self, config):
+        self.name = config.get('name')
+        self.type = config.get('type')
+        self.value = PARAM_TYPES[self.type](config.get('value'))
+
 def load_test(source, xmlconfig):
     params = {}
     module_name = xmlconfig.get('module')
     class_name = xmlconfig.get('class')
     params_node = xmlconfig.find('params')
-    for param in params_node.findall('param'):
-        param_name = param.get('name')
-        param_value = param.get('value')
-        param_type = param.get('type')
-        params[param_name] = PARAM_TYPES[param_type](param_value)
+    for param_node in params_node.findall('param'):
+        param = ConfigParam(param_node)
+        params[param.name] = param.value
     klass = namedAny('.'.join([module_name, class_name]))
     klass.source = source
     return klass(**params)
